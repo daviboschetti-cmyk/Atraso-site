@@ -1,0 +1,22 @@
+{
+  "name": "latetracker-app",
+  "version": "1.0.0",
+  "description": "Sistema de Gestão de Atrasos e Frequência baseado em JavaScript Moderno",
+  "type": "module",
+  "scripts": {
+    "start": "python -m http.server 8080",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "javascript",
+    "event-target",
+    "attendance",
+    "offline-first",
+    "indexeddb"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "jsqr": "^1.4.0"
+  }
+}

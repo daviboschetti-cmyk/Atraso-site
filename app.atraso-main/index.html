@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LateTracker Pro - Gestão Inteligente de Atrasos e Frequência</title>
+  <meta name="description"
+    content="Plataforma moderna de gestão de atrasos escolares e acadêmicos com arquitetura orientada a eventos, leitura de QR Code via câmera, resiliência offline e análise preditiva.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏱️</text></svg>">
+  <script src="js/jsQR.js"></script>
+</head>
+
+<body>
+
+  <!-- Header Institucional com Relógio & Status de Rede -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-section">
+        <div class="brand-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>LateTracker <span class="brand-badge">Pro</span></h1>
+        </div>
+      </div>
+
+      <div class="header-meta">
+        <div class="clock-display" id="live-clock-container" title="Horário Oficial da Instituição">
+          <span class="clock-icon">🕒</span>
+          <span id="live-clock-time">--:--:--</span>
+        </div>
+
+        <div class="network-status" id="network-badge" title="Status de Sincronização e Conexão">
+          <span class="status-dot"></span>
+          <span id="network-status-text">Online</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="main-content">
+
+    <!-- Linha de Métricas da Sessão -->
+    <section class="metrics-row" aria-label="Estatísticas da Sessão">
+      <article class="metric-card metric-total">
+        <div class="metric-header">
+          <span>Total de Entradas</span>
+          <span>📋</span>
+        </div>
+        <div class="metric-value" id="metric-total-count">0</div>
+        <div class="metric-footer">Registrados nesta aula</div>
+      </article>
+
+      <article class="metric-card metric-ontime">
+        <div class="metric-header">
+          <span>No Horário</span>
+          <span>✅</span>
+        </div>
+        <div class="metric-value" id="metric-ontime-count">0</div>
+        <div class="metric-footer">Pontualidade garantida</div>
+      </article>
+
+      <article class="metric-card metric-tolerated">
+        <div class="metric-header">
+          <span>Atraso Tolerado</span>
+          <span>⏱️</span>
+        </div>
+        <div class="metric-value" id="metric-tolerated-count">0</div>
+        <div class="metric-footer">Dentro da tolerância estipulada</div>
+      </article>
+
+      <article class="metric-card metric-exceeded">
+        <div class="metric-header">
+          <span>Tolerância Excedida</span>
+          <span>🚨</span>
+        </div>
+        <div class="metric-value" id="metric-exceeded-count">0</div>
+        <div class="metric-footer">Coordenação notificada</div>
+      </article>
+    </section>
+
+    <!-- Barra de Parâmetros da Aula Ativa -->
+    <section class="session-bar" aria-label="Configuração da Aula">
+      <div class="session-info">
+        <div class="session-item">
+          <span class="session-label">Turma / Sala</span>
+          <span class="session-val">2º Ano Médio - Sala 12</span>
+        </div>
+        <div class="session-item">
+          <span class="session-label">Início Previsto</span>
+          <span class="session-val" id="session-class-start-label">08:00</span>
+        </div>
+        <div class="session-item">
+          <span class="session-label">Fuso Horário Nativo</span>
+          <span class="session-val" id="session-timezone-label">América/São Paulo</span>
+        </div>
+      </div>
+
+      <div class="tolerance-control">
+        <label for="tolerance-input" class="session-label">Limite Tolerância:</label>
+        <input type="number" id="tolerance-input" min="0" max="60" value="10" title="Minutos de tolerância">
+        <span class="session-label">minutos</span>
+      </div>
+    </section>
+
+    <!-- Grid de 2 Colunas: Operações e Feed -->
+    <div class="dashboard-grid">
+
+      <!-- Coluna Esquerda: Estação de Check-in e Análise Preditiva -->
+      <div class="operation-column">
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+              </svg>
+              Estação de Check-in
+            </h2>
+          </div>
+
+          <!-- Abas de Operação -->
+          <nav class="operation-tabs">
+            <button class="tab-btn active" id="tab-btn-manual" data-tab="tab-manual">
+              <span>✍️</span> Registro Manual
+            </button>
+            <button class="tab-btn" id="tab-btn-camera" data-tab="tab-camera">
+              <span>📷</span> Câmera / Crachá
+            </button>
+            <button class="tab-btn" id="tab-btn-projector" data-tab="tab-projector">
+              <span>🔄</span> QR Dinâmico
+            </button>
+          </nav>
+
+          <!-- Conteúdo Aba 1: Registro Manual e Simulação de Horários -->
+          <div class="tab-content active" id="tab-manual">
+            <form id="entry-form">
+              <div class="form-group">
+                <label for="student-id-input" class="form-label">Matrícula do Aluno</label>
+                <input type="text" id="student-id-input" class="form-input" placeholder="Ex: STD-101" required>
+              </div>
+
+              <div class="form-group">
+                <label for="student-name-input" class="form-label">Nome Completo</label>
+                <input type="text" id="student-name-input" class="form-input" placeholder="Ex: Ana Clara" required>
+              </div>
+
+              <!-- Simulador de Atraso e Horário -->
+              <div class="time-simulation-box">
+                <div class="time-row">
+                  <span class="session-label">Simulação de Horário de Entrada:</span>
+                  <span class="session-val" id="simulated-delay-label">No Horário (+0 min)</span>
+                </div>
+                <div class="slider-container">
+                  <input type="range" id="simulated-delay-slider" min="0" max="45" value="0" step="5">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-reset-time">Tempo Real</button>
+                </div>
+              </div>
+
+              <!-- Alunos Rápidos de Demonstração -->
+              <div class="form-group">
+                <label class="form-label">Atalhos de Alunos para Teste Rápido:</label>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary btn-sm demo-student-btn" data-id="STD-101"
+                    data-name="Ana Clara">Ana Clara</button>
+                  <button type="button" class="btn btn-secondary btn-sm demo-student-btn" data-id="STD-102"
+                    data-name="Lucas Rocha">Lucas Rocha</button>
+                  <button type="button" class="btn btn-secondary btn-sm demo-student-btn" data-id="STD-103"
+                    data-name="Beatriz Lima">Beatriz Lima</button>
+                  <button type="button" class="btn btn-secondary btn-sm demo-student-btn" data-id="STD-104"
+                    data-name="Gabriel Santos">Gabriel Santos</button>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block" id="btn-submit-entry">
+                Registrar Entrada de Aluno
+              </button>
+            </form>
+          </div>
+
+          <!-- Conteúdo Aba 2: Scanner de Câmera via getUserMedia & QR Decoder -->
+          <div class="tab-content" id="tab-camera">
+            <div class="camera-scanner-view">
+
+              <!-- Seletor de Câmera e Status -->
+              <div class="camera-controls-bar">
+                <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                  <label for="camera-select" class="form-label">Selecionar Câmera de Entrada:</label>
+                  <select id="camera-select" class="form-input" style="padding: 0.5rem 0.75rem; font-size: 0.88rem;">
+                    <option value="">Detectando câmeras do sistema...</option>
+                  </select>
+                </div>
+                <div class="camera-status-pill" id="camera-status-pill">
+                  <span class="status-indicator-dot"></span>
+                  <span id="camera-status-text">Câmera em Espera</span>
+                </div>
+              </div>
+
+              <!-- Viewfinder com Vídeo e Laser Scan -->
+              <div class="camera-preview-container" id="camera-preview-container">
+                <video id="camera-video-preview" autoplay playsinline muted></video>
+                <div class="scanner-overlay" id="scanner-overlay">
+                  <div class="scanner-laser"></div>
+                  <div class="scanner-corner corner-tl"></div>
+                  <div class="scanner-corner corner-tr"></div>
+                  <div class="scanner-corner corner-bl"></div>
+                  <div class="scanner-corner corner-br"></div>
+                </div>
+                <div class="camera-placeholder-text" id="camera-placeholder">
+                  <span style="font-size: 2.2rem; margin-bottom: 0.25rem;">📷</span>
+                  <strong style="color: #f1f5f9; font-size: 1rem;">Scanner de Câmera Desativado</strong>
+                  <p style="font-size: 0.82rem; max-width: 320px; color: #94a3b8; line-height: 1.4;">
+                    Clique em <strong>"Ativar Câmera"</strong> abaixo. Caso o navegador solicite permissão, clique em
+                    <strong>"Permitir"</strong> para ler crachás e QR Codes em tempo real.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Botões de Ação da Câmera -->
+              <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-start-camera">
+                  <span>🎥</span> Ativar Câmera
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-stop-camera">
+                  <span>⏹️</span> Desligar Câmera
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-upload-qr">
+                  <span>📁</span> Ler Imagem de QR
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-simulate-scan">
+                  <span>⚡</span> Simular Crachá
+                </button>
+                <input type="file" id="qr-file-input" accept="image/*" style="display: none;">
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Conteúdo Aba 3: Projetor de QR Code Dinâmico do Professor -->
+          <div class="tab-content" id="tab-projector">
+            <div class="qr-projector-view">
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                Projete esta tela na lousa. O código renova a cada 10s para comprovar presença física do aluno.
+              </p>
+
+              <div class="qr-canvas-box">
+                <canvas id="qr-code-canvas" width="220" height="220"></canvas>
+              </div>
+
+              <div class="countdown-bar-wrap">
+                <div class="countdown-bar" id="qr-countdown-bar" style="width: 100%;"></div>
+              </div>
+
+              <div>
+                <span class="qr-token-label" id="qr-token-display">TOKEN CARREGANDO...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card de Análise Preditiva & Padrões de Recorrência -->
+        <section class="predictive-card" aria-label="Inteligência Preditiva">
+          <div class="panel-header" style="padding: 0 0 0.75rem; border: none;">
+            <h3 class="panel-title" style="font-size: 0.95rem;">
+              <span>🧠</span> Análise Preditiva de Recorrência
+            </h3>
+            <span class="brand-badge" id="predictive-total-label">0 registros</span>
+          </div>
+
+          <div class="risk-meter-box">
+            <span class="session-label">Índice de Risco Institucional:</span>
+            <span class="risk-badge risk-baixo" id="predictive-risk-badge">Baixo (0%)</span>
+          </div>
+
+          <ul class="insights-list" id="predictive-insights-list">
+            <li>Registros em tempo real alimentarão o diagnóstico comportamental.</li>
+          </ul>
+        </section>
+      </div>
+
+      <!-- Coluna Direita: Feed em Tempo Real com Pub/Sub -->
+      <div class="feed-column">
+        <div class="panel" style="height: 100%;">
+          <div class="panel-header">
+            <h2 class="panel-title">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              Feed de Entradas ao Vivo
+            </h2>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary btn-sm" id="btn-export-csv" title="Exportar registros em CSV">
+                Exportar CSV
+              </button>
+              <button class="btn btn-outline-danger btn-sm" id="btn-clear-feed" title="Limpar registros da chamada">
+                Limpar
+              </button>
+            </div>
+          </div>
+
+          <!-- Barra de Filtros -->
+          <div class="feed-filter-bar">
+            <div class="filter-pills">
+              <button class="pill-btn active" data-filter="all">Todos (<span id="filter-count-all">0</span>)</button>
+              <button class="pill-btn" data-filter="on_time">No Horário (<span
+                  id="filter-count-ontime">0</span>)</button>
+              <button class="pill-btn" data-filter="late_tolerated">Tolerados (<span
+                  id="filter-count-tolerated">0</span>)</button>
+              <button class="pill-btn" data-filter="tolerance_exceeded">Excedidos (<span
+                  id="filter-count-exceeded">0</span>)</button>
+            </div>
+          </div>
+
+          <!-- Lista de Entradas -->
+          <div class="entries-scroll-area" id="entries-feed-container">
+            <div class="empty-state" id="feed-empty-state">
+              <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+              <p>Nenhuma entrada registrada até o momento.</p>
+              <small>Use o formulário manual, câmera ou QR Code para registrar.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Script Principal com Módulos ES6 -->
+  <script type="module" src="js/app.js"></script>
+</body>
+
+</html>
